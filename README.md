@@ -14,7 +14,7 @@ go version
 >> go version go1.11.2 darwin/amd64
 ```
 
-## Get started
+## Introduction
 
 ### Run your script
 
@@ -40,6 +40,8 @@ Check `setup.sh` to see which path to export, Add the change to your `.bashrc` t
 
 Hugo is a go framework for building websites, a bit like Jekyll.
 
+## Get Started with Hugo
+
 Install [Hugo](https://gohugo.io/getting-started/quick-start/) with brew on mac:
 ```bash
 brew install hugo
@@ -52,6 +54,17 @@ And then create your first website with:
 ```bash
 hugo new site quickstart
 ```
+
+## Configure your site
+
+Once you have created the project follow the instructions:
+
+1. Download a theme into the same-named folder.
+   Choose a [theme](https://themes.gohugo.io/), or
+   create your own with the `hugo new theme <THEMENAME>` command.
+2. You can add content by creating a single files
+   with `hugo new <SECTIONNAME>/<FILENAME>.<FORMAT>`.
+3. Start the built-in live server via `hugo server`.
 
 ## Sources
 
