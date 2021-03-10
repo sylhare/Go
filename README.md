@@ -64,7 +64,7 @@ Once you have created the project follow the instructions:
    create your own with the `hugo new theme <THEMENAME>` command.
 2. You can add content by creating a single files
    with `hugo new <SECTIONNAME>/<FILENAME>.<FORMAT>`.
-3. Start the built-in live server via `hugo server`.
+3. Start the built-in live server via `hugo server` and it will run at [localhost:1313](http://localhost:1313/)
 
 ## Sources
 
