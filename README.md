@@ -21,7 +21,8 @@ go version
 Run you script `hello.go` with:
 
 ```bash
-go run hello.go
+go run src/examples/hello.go
+>> Hello, World!
 ```
 
 ### Install a Go script
@@ -35,36 +36,42 @@ go install hello.go
 You need to set your own `$GOPATH` for it to work. 
 Check `setup.sh` to see which path to export, Add the change to your `.bashrc` to make it permanent.
 
+### Create a Go module
 
-## Hugo
+Run the following command to create a new module:
 
-Hugo is a go framework for building websites, a bit like Jekyll.
-
-## Get Started with Hugo
-
-Install [Hugo](https://gohugo.io/getting-started/quick-start/) with brew on mac:
 ```bash
-brew install hugo
-...
-hugo version
->> Hugo Static Site Generator v0.51
+go mod init <module-name>
 ```
 
-And then create your first website with:
+This will create a `go.mod` file in the current directory.
+
+### Dependency management
+
+To add a dependency, run:
+
 ```bash
-hugo new site quickstart
+go get <package-name>
 ```
 
-## Configure your site
+This will add the package to the `go.mod` file.
+To install all dependencies, and clean up the `go.mod` file, run:
 
-Once you have created the project follow the instructions:
+```bash
+go mod tidy
+```
 
-1. Download a theme into the same-named folder.
-   Choose a [theme](https://themes.gohugo.io/), or
-   create your own with the `hugo new theme <THEMENAME>` command.
-2. You can add content by creating a single files
-   with `hugo new <SECTIONNAME>/<FILENAME>.<FORMAT>`.
-3. Start the built-in live server via `hugo server` and it will run at [localhost:1313](http://localhost:1313/)
+You can also use `go mod download` which will download all dependencies in the cache.
+
+### Run a unit test
+
+Run unit tests:
+
+```bash
+go test ./...
+```
+
+This should run all the tests in the current directory and subdirectories.
 
 ## Sources
 
@@ -72,4 +79,3 @@ Here are a couple of useful links:
 
 - [How to write Go code](https://golang.org/doc/code.html#Workspaces)
 - [Interactive Go tutorial](https://tour.golang.org/welcome/1)
-- [Hugo a static site generator](https://gohugo.io/)
