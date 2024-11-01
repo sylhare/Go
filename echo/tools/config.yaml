@@ -1,0 +1,5 @@
+package: pong
+output: ../internal/pong/api.gen.go
+generate:
+  models: true
+  echo-server: true
