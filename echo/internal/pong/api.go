@@ -1,4 +1,4 @@
-package api
+package pong
 
 import (
 	"net/http"
