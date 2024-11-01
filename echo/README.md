@@ -21,7 +21,7 @@ go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 Generate the OpenAPI spec with:
 
 ```bash
-oapi-codegen -generate types,server,spec -package api -o api/api.gen.go api/api.yml
+oapi-codegen -generate types,server,spec -package pong -o internal/pong/api.gen.go tools/api.yml
 ```
 
 [1] https://github.com/oapi-codegen/oapi-codegen

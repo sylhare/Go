@@ -21,7 +21,7 @@ go version
 Run you script `hello.go` with:
 
 ```bash
-go run src/examples/hello.go
+go run pkg/examples/hello.go
 >> Hello, World!
 ```
 
