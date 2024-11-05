@@ -3,11 +3,6 @@
 
 name: CI
 
-defaults:
-  run:
-    working-directory: script
-
-
 on:
   push:
     branches: [ "master" ]
@@ -27,4 +22,4 @@ jobs:
         go-version: '1.20'
 
     - name: Test
-      run: go test $(go list ./... | grep -v /tools/)
+      run: go test -v ./...
