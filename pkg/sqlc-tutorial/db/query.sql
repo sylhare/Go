@@ -12,7 +12,7 @@ ORDER BY name;
 INSERT INTO authors (name, bio)
 VALUES ($1, $2) RETURNING *;
 
--- name: UpdateAuthor :exec
+-- name: UpdateAuthor :one
 UPDATE authors
 set name = $2,
     bio  = $3
