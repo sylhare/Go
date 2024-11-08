@@ -1,12 +1,12 @@
-package main
+package internal
 
 import "fmt"
 
-func Add(a int, b int) int {
+func add(a int, b int) int {
 	return a + b
 }
 
-func numbers() {
+func Numbers() {
 	lang, ten := "golang", 10
 
 	fmt.Printf("\nlet's try some %v! \n", lang)

@@ -1,9 +1,9 @@
-package main
+package internal
 
 import "testing"
 
 func TestAdd(t *testing.T) {
-	result := Add(2, 3)
+	result := add(2, 3)
 	expected := 5
 
 	if result != expected {

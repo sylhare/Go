@@ -1,4 +1,4 @@
-package main
+package internal
 
 import "fmt"
 
@@ -9,7 +9,7 @@ var boolean bool
 
 var WORLD = "world"
 
-func variables() {
+func Variables() {
 	ten, lang := 37.5, "golang"
 	var a, b, c = 1, 2, true
 
