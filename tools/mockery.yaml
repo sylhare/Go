@@ -1,0 +1,12 @@
+filename: "{{.InterfaceName}}.gen.go"
+dir: "../pkg/examples/mocks"
+mockname: "{{.InterfaceName}}"
+outpkg: "mocks"
+
+packages:
+  src/pkg/examples/service:
+    interfaces:
+      Service:
+        config:
+          with-expecter: true
+
