@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	sdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/testcontainers/testcontainers-go"
 	"io"
@@ -26,8 +28,10 @@ func TestS3(t *testing.T) {
 		}
 	}()
 
+	staticCredentials := sdk.NewCredentialsCache(credentials.NewStaticCredentialsProvider("test", "test", ""))
 	s3Client := s3.NewFromConfig(localstackContainer.Config, func(o *s3.Options) {
 		o.UsePathStyle = true
+		o.Credentials = staticCredentials
 	})
 
 	t.Run("Create bucket", func(t *testing.T) {

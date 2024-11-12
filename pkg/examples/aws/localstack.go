@@ -2,7 +2,7 @@ package aws
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
+	sdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
@@ -11,7 +11,7 @@ import (
 )
 
 type LocalStackContainer struct {
-	Config aws.Config
+	Config sdk.Config
 
 	*localstack.LocalStackContainer
 }
@@ -47,7 +47,7 @@ func Localstack() (*LocalStackContainer, error) {
 		return nil, err
 	}
 
-	awsConfig.BaseEndpoint = aws.String("http://" + net.JoinHostPort(host, port.Port()))
+	awsConfig.BaseEndpoint = sdk.String("http://" + net.JoinHostPort(host, port.Port()))
 
 	return &LocalStackContainer{
 		awsConfig,
