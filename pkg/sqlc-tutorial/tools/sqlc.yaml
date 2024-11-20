@@ -1,12 +1,29 @@
 version: "2"
 sql:
+# To create the models based on the schema file
   - engine: "postgresql"
     queries: "../db/query.sql"
     schema: "../db/schema.sql"
     gen:
       go:
         package: "db"
-        out: "../db/codegen"
+        out: "../db/codegen/schema"
+        sql_package: "pgx/v5"
+        #output_files_suffix: ".gen.go"
+        output_batch_file_name: "batch.gen.go"
+        output_db_file_name: "db.gen.go"
+        output_models_file_name: "models.gen.go"
+        output_querier_file_name: "querier.gen.go"
+        output_copyfrom_file_name: "copyfrom.gen.go"
+
+# To create the models based on the migration files
+  - engine: "postgresql"
+    queries: "../db/query.sql"
+    schema: "../db/migrations"
+    gen:
+      go:
+        package: "db"
+        out: "../db/codegen/migration"
         sql_package: "pgx/v5"
         #output_files_suffix: ".gen.go"
         output_batch_file_name: "batch.gen.go"
