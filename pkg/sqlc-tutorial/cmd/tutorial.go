@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"reflect"
-	db "tutorial.sqlc.dev/app/db/codegen"
+	db "tutorial.sqlc.dev/app/db/codegen/schema"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
