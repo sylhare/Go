@@ -8,3 +8,7 @@ import (
 func TestRunTutorial(t *testing.T) {
 	tutorial()
 }
+
+func TestRunGoroutines(t *testing.T) {
+	goroutines()
+}
