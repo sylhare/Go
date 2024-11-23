@@ -21,6 +21,22 @@ func tutorial() {
 	hello, _ := example()
 	fmt.Printf(hello)
 }
+func Modify(a *int) int {
+	*a += 1
+	return *a
+}
+
+func ModifyForReal(a int) int {
+	a += 1
+	return a
+}
+
+func ModifyBoth(a *int, b int) (int, int) {
+	*a += 1
+	b += 1
+	return *a, b
+}
+
 func example() (hello string, error error) {
 	if err := doSomething(); err != nil {
 		return
