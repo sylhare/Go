@@ -43,6 +43,26 @@ func example() (hello string, error error) {
 	}
 	return "hello", nil
 }
+
+// Structs
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+// Interface
+
+type Handler interface {
+	Handle()
+}
+
+type UserHandler struct{}
+
+func (h UserHandler) Handle() {
+	fmt.Println("hello")
+}
+
 // Goroutines
 
 func goroutines() {

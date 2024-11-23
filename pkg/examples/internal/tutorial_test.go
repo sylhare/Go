@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -32,4 +32,9 @@ func TestModify(t *testing.T) {
 		assert.Equal(t, 3, a)
 		assert.Equal(t, 2, b)
 	})
+}
+
+// TestUserHandlerImplementsHandler won't compile if UserHandler doesn't implement Handler
+func TestUserHandlerImplementsHandler(t *testing.T) {
+	var _ Handler = UserHandler{}
 }
