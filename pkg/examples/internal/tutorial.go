@@ -18,9 +18,33 @@ func tutorial() {
 
 	b := 2
 	fmt.Println(b)
+
+	p := Person{Name: "Alice", Age: 30}
+	fmt.Println(p.Name)
+
+	s := []int{1, 2, 3}
+	fmt.Println(s[0])
+	s = append(s, 4)
+	fmt.Println(s)
+
+	m := map[string]int{
+		"one": 1,
+		"two": 2,
+	}
+	fmt.Println(m["one"])
+
+	m["three"] = 3
+	fmt.Println(m)
+
 	hello, _ := example()
 	fmt.Printf(hello)
 }
+
+func doSomething() error {
+	return nil
+	//return error(fmt.Errorf("Raised an error"))
+}
+
 func Modify(a *int) int {
 	*a += 1
 	return *a
