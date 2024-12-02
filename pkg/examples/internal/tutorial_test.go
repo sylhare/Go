@@ -14,18 +14,26 @@ func TestRunGoroutines(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
-	a, b := 2, 2
+	var a, b int
+
+	setup := func() {
+		a, b = 2, 2
+	}
+
 	t.Run("Test Modify", func(t *testing.T) {
+		setup()
 		assert.Equal(t, 3, Modify(&a))
 		assert.Equal(t, 3, a)
 	})
 
 	t.Run("Test ModifyForReal", func(t *testing.T) {
+		setup()
 		assert.Equal(t, 3, ModifyForReal(b))
 		assert.Equal(t, 2, b)
 	})
 
 	t.Run("Test ModifyBoth", func(t *testing.T) {
+		setup()
 		modifiedA, modifiedB := ModifyBoth(&a, b)
 		assert.Equal(t, 3, modifiedA)
 		assert.Equal(t, 3, modifiedB)
