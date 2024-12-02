@@ -10,13 +10,12 @@ import (
 	"net"
 )
 
-type LocalStackContainer struct {
-	Config sdk.Config
-
-	*localstack.LocalStackContainer
+type Localstack struct {
+	Config    sdk.Config
+	Container *localstack.LocalStackContainer
 }
 
-func Localstack() (*LocalStackContainer, error) {
+func New() (*Localstack, error) {
 	ctx := context.Background()
 
 	localstackContainer, err := localstack.Run(
@@ -49,9 +48,14 @@ func Localstack() (*LocalStackContainer, error) {
 
 	awsConfig.BaseEndpoint = sdk.String("http://" + net.JoinHostPort(host, port.Port()))
 
-	return &LocalStackContainer{
+	return &Localstack{
 		awsConfig,
 		localstackContainer,
 	}, nil
+}
 
+func (ls *Localstack) Terminate() {
+	if err := testcontainers.TerminateContainer(ls.Container); err != nil {
+		log.Printf("failed to terminate container: %s", err)
+	}
 }

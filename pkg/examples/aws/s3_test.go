@@ -7,7 +7,6 @@ import (
 	sdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/testcontainers/testcontainers-go"
 	"io"
 	"log"
 	"testing"
@@ -21,15 +20,13 @@ var (
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	localstackContainer, err := Localstack()
-	defer func() {
-		if err := testcontainers.TerminateContainer(localstackContainer.LocalStackContainer); err != nil {
-			log.Printf("failed to terminate container: %s", err)
-		}
-	}()
-
+	localstack, err := New()
+	if err != nil {
+		t.Fatalf("failed to start LocalStack: %s", err)
+	}
+	defer localstack.Terminate()
 	staticCredentials := sdk.NewCredentialsCache(credentials.NewStaticCredentialsProvider("test", "test", ""))
-	s3Client := s3.NewFromConfig(localstackContainer.Config, func(o *s3.Options) {
+	s3Client := s3.NewFromConfig(localstack.Config, func(o *s3.Options) {
 		o.UsePathStyle = true
 		o.Credentials = staticCredentials
 	})
