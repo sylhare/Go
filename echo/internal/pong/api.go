@@ -21,5 +21,6 @@ func (Server) GetPing(ctx echo.Context) error {
 		Ping: "pong",
 	}
 
+	ctx.Logger().Info("Pong", "response", resp)
 	return ctx.JSON(http.StatusOK, resp)
 }

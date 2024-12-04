@@ -6,6 +6,7 @@ require (
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/stretchr/testify v1.9.0
+	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -28,6 +29,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
