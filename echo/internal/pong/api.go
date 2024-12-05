@@ -1,6 +1,7 @@
 package pong
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -16,11 +17,29 @@ func NewServer() Server {
 }
 
 // (GET /ping)
-func (Server) GetPing(ctx echo.Context) error {
+func (s Server) GetPing(ctx echo.Context) error {
 	resp := Pong{
 		Ping: "pong",
 	}
 
-	ctx.Logger().Info("Pong", "response", resp)
+	ctx.Logger().Infof("Ping response %s", resp.Ping)
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// (GET /restricted)
+func (s Server) GetRestricted(ctx echo.Context) error {
+	name := s.printToken(ctx)
+
+	resp := Pong{
+		Ping: "Welcome " + name + "!",
+	}
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+func (s Server) printToken(ctx echo.Context) string {
+	user := ctx.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	name := claims["name"].(string)
+	ctx.Logger().Infof("Restricted name %s", name)
+	return name
 }

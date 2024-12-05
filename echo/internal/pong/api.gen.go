@@ -17,6 +17,9 @@ type ServerInterface interface {
 
 	// (GET /ping)
 	GetPing(ctx echo.Context) error
+
+	// (GET /restricted)
+	GetRestricted(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -30,6 +33,15 @@ func (w *ServerInterfaceWrapper) GetPing(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetPing(ctx)
+	return err
+}
+
+// GetRestricted converts echo context to params.
+func (w *ServerInterfaceWrapper) GetRestricted(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetRestricted(ctx)
 	return err
 }
 
@@ -62,5 +74,6 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.GET(baseURL+"/ping", wrapper.GetPing)
+	router.GET(baseURL+"/restricted", wrapper.GetRestricted)
 
 }
