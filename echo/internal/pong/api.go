@@ -16,7 +16,7 @@ func NewServer() Server {
 	return Server{}
 }
 
-// (GET /ping)
+// GetPing (GET /ping)
 func (s Server) GetPing(ctx echo.Context) error {
 	resp := Pong{
 		Ping: "pong",
@@ -26,7 +26,7 @@ func (s Server) GetPing(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-// (GET /restricted)
+// GetRestricted (GET /restricted)
 func (s Server) GetRestricted(ctx echo.Context) error {
 	name := s.printToken(ctx)
 
