@@ -9,13 +9,12 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"log"
-	"math/big"
 	"strings"
 	"testing"
 )
 
-func TestRSA(t *testing.T) {
-	pemData := `-----BEGIN PUBLIC KEY-----
+var (
+	publicKeyPEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo
 4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0/IzW7yWR7QkrmBL7jTKEn5u
 +qKhbwKfBstIs+bMY2Zkp18gnTxKLxoS2tFczGkPLPgizskuemMghRniWaoLcyeh
@@ -25,99 +24,7 @@ cKWTjpBP2dPwVZ4WWC+9aGVd+Gyn1o0CLelf4rEjGoXbAAEgAqeGUxrcIlbjXfbc
 mwIDAQAB
 -----END PUBLIC KEY-----`
 
-	block, _ := pem.Decode([]byte(pemData))
-	if block == nil || block.Type != "PUBLIC KEY" {
-		fmt.Println("failed to decode PEM block containing public key")
-		return
-	}
-
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		fmt.Println("failed to parse DER encoded public key:", err)
-		return
-	}
-
-	rsaPub, ok := pub.(*rsa.PublicKey)
-	if !ok {
-		fmt.Println("not an RSA public key")
-		return
-	}
-
-	n := rsaPub.N
-	e := rsaPub.E
-
-	fmt.Printf("Modulus (n): %s\n", n.String())
-	fmt.Printf("Exponent (e): %d\n", e)
-
-	// Encode the modulus as Base64 URL without padding
-	nBytes := n.Bytes()
-	nBase64 := base64.URLEncoding.EncodeToString(nBytes)
-	nBase64 = strings.TrimRight(nBase64, "=")
-	fmt.Println("Encoded n:", nBase64)
-	fmt.Println("Encoded e:", intToBase64(e))
-
-	// Parse the token
-	var jwtToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5LWlkIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.Vm4Dg5bskBWMUGTYPO6Tgge2nLJ1Oa6rkN3B-s9PsFQ9zvQQ_2V1K73X70X3zW5JiXElPRgXoJu-op0UwVt34uPdfMrMeQ5O1Ja-H6TvO2JDYMMgYz1yPp36-UY73Y7t-i2RTEXMrc9_piGtOimL7lpE5N58iQFxG4GmjyGgiLZvvczYYS0EdpJrVx4brT5pFMQ-ltPxLByw6z8jqpwzqNGssHlmzObtsKYysHOaYYfHlTDff2PeGgu6Fb5ZkNRhkQaEjCYXs1eoVVYu2w8v6FBe8sgzaQkkfiOhuiSxu0vGRv3breSe0J2xUbM1RJUjibZSnLuuFruV6wKsJWivDA"
-	token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
-		return rsaPub, nil
-	})
-	if err != nil {
-		fmt.Println("Error parsing token:", err)
-	}
-
-	// Print the token claims
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		fmt.Println("Token Claims:")
-		for key, value := range claims {
-			fmt.Printf("%s: %v\n", key, value)
-		}
-	} else {
-		fmt.Println("Invalid token claims")
-	}
-	fmt.Println("Token is valid:", token.Valid)
-
-	// Encoded values
-	nBase64 = "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u-qKhbwKfBstIs-bMY2Zkp18gnTxKLxoS2tFczGkPLPgizskuemMghRniWaoLcyehkd3qqGElvW_VDL5AaWTg0nLVkjRo9z-40RQzuVaE8AkAFmxZzow3x-VJYKdjykkJ0iT9wCS0DRTXu269V264Vf_3jvredZiKRkgwlL9xNAwxXFg0x_XFw005UWVRIkdgcKWTjpBP2dPwVZ4WWC-9aGVd-Gyn1o0CLelf4rEjGoXbAAEgAqeGUxrcIlbjXfbcmw"
-	eBase64 := "AQAB"
-
-	// Decode n
-	nBytes, err = base64.RawURLEncoding.DecodeString(nBase64)
-	if err != nil {
-		fmt.Println("Error decoding n:", err)
-		return
-	}
-	n = new(big.Int).SetBytes(nBytes)
-
-	// Decode e
-	eBytes, err := base64.RawURLEncoding.DecodeString(eBase64)
-	if err != nil {
-		fmt.Println("Error decoding e:", err)
-		return
-	}
-	e = int(new(big.Int).SetBytes(eBytes).Uint64())
-
-	// Construct the RSA public key
-	rsaPub = &rsa.PublicKey{
-		N: n,
-		E: e,
-	}
-
-	// Print the RSA public key
-	fmt.Printf("RSA Public Key: %+v\n", rsaPub)
-
-	// Optionally, encode the public key to PEM format
-	pubASN1, err := x509.MarshalPKIXPublicKey(rsaPub)
-	if err != nil {
-		fmt.Println("Error marshaling public key:", err)
-		return
-	}
-	pubPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubASN1,
-	})
-	fmt.Printf("PEM Encoded Public Key:\n%s\n", pubPEM)
-
-	privateKeyPEM := `-----BEGIN PRIVATE KEY-----
+	privateKeyPEM = `-----BEGIN PRIVATE KEY-----
 MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQC7VJTUt9Us8cKj
 MzEfYyjiWA4R4/M2bS1GB4t7NXp98C3SC6dVMvDuictGeurT8jNbvJZHtCSuYEvu
 NMoSfm76oqFvAp8Gy0iz5sxjZmSnXyCdPEovGhLa0VzMaQ8s+CLOyS56YyCFGeJZ
@@ -146,62 +53,52 @@ TQrKhArgLXX4v3CddjfTRJkFWDbE/CkvKZNOrcf1nhaGCPspRJj2KUkj1Fhl9Cnc
 dn/RsYEONbwQSjIfMPkvxF+8HQ==
 -----END PRIVATE KEY-----`
 
-	block, _ = pem.Decode([]byte(privateKeyPEM))
-	if block == nil || block.Type != "PRIVATE KEY" {
-		log.Fatal("failed to decode PEM block containing private key")
-	}
+	jwtTokenString = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5LWlkIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.Vm4Dg5bskBWMUGTYPO6Tgge2nLJ1Oa6rkN3B-s9PsFQ9zvQQ_2V1K73X70X3zW5JiXElPRgXoJu-op0UwVt34uPdfMrMeQ5O1Ja-H6TvO2JDYMMgYz1yPp36-UY73Y7t-i2RTEXMrc9_piGtOimL7lpE5N58iQFxG4GmjyGgiLZvvczYYS0EdpJrVx4brT5pFMQ-ltPxLByw6z8jqpwzqNGssHlmzObtsKYysHOaYYfHlTDff2PeGgu6Fb5ZkNRhkQaEjCYXs1eoVVYu2w8v6FBe8sgzaQkkfiOhuiSxu0vGRv3breSe0J2xUbM1RJUjibZSnLuuFruV6wKsJWivDA"
+)
 
-	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+func decodePEMBlock(pemData string, blockType string) ([]byte, error) {
+	block, _ := pem.Decode([]byte(pemData))
+	if block == nil || block.Type != blockType {
+		return nil, fmt.Errorf("failed to decode PEM block containing %s", blockType)
+	}
+	return block.Bytes, nil
+}
+
+func parseRSAPublicKey(pemData string) (*rsa.PublicKey, error) {
+	bytes, err := decodePEMBlock(pemData, "PUBLIC KEY")
 	if err != nil {
-		log.Fatalf("failed to parse private key: %v", err)
+		return nil, err
 	}
+	pub, err := x509.ParsePKIXPublicKey(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse DER encoded public key: %v", err)
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("not an RSA public key")
+	}
+	return rsaPub, nil
+}
 
+func parseRSAPrivateKey(pemData string) (*rsa.PrivateKey, error) {
+	bytes, err := decodePEMBlock(pemData, "PRIVATE KEY")
+	if err != nil {
+		return nil, err
+	}
+	privateKey, err := x509.ParsePKCS8PrivateKey(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %v", err)
+	}
 	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
 	if !ok {
-		log.Fatal("not an RSA private key")
+		return nil, fmt.Errorf("not an RSA private key")
 	}
-
-	// Create a new token object
-	token = jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"sub":   "987654321",
-		"name":  "Joe Dohn",
-		"admin": false,
-	})
-
-	// Sign the token with the private key
-	log.Printf("Signing token with private key: %v", rsaPrivateKey)
-	tokenString, err := token.SignedString(rsaPrivateKey)
-	if err != nil {
-		log.Fatalf("failed to sign token: %v", err)
-	}
-
-	fmt.Println("Signed Token:", tokenString)
-
-	token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return rsaPub, nil
-	})
-	if err != nil {
-		fmt.Println("Error parsing token:", err)
-	}
-
-	// Print the token claims
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		fmt.Println("Token Claims:")
-		for key, value := range claims {
-			fmt.Printf("%s: %v\n", key, value)
-		}
-	} else {
-		fmt.Println("Invalid token claims")
-	}
-	fmt.Println("Token is valid:", token.Valid)
+	return rsaPrivateKey, nil
 }
 
 func intToBase64(n int) string {
-	// Convert the integer to a byte slice
 	bytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(bytes, uint32(n))
-
-	// Remove leading zero bytes
 	var start int
 	for start = 0; start < len(bytes); start++ {
 		if bytes[start] != 0 {
@@ -209,8 +106,93 @@ func intToBase64(n int) string {
 		}
 	}
 	bytes = bytes[start:]
+	return base64.StdEncoding.EncodeToString(bytes)
+}
 
-	// Encode the byte slice to base64
-	encoded := base64.StdEncoding.EncodeToString(bytes)
-	return encoded
+func publicKeyToPEM(pub *rsa.PublicKey) string {
+	pubASN1, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		log.Fatalf("failed to marshal public key: %v", err)
+	}
+	pubPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubASN1,
+	})
+	return string(pubPEM)
+}
+
+func TestRSA(t *testing.T) {
+	var rsaPub *rsa.PublicKey
+
+	t.Run("ParseRSAPublicKey", func(t *testing.T) {
+		var err error
+		rsaPub, err = parseRSAPublicKey(publicKeyPEM)
+		if err != nil {
+			t.Fatalf("failed to parse RSA public key: %v", err)
+		}
+	})
+
+	t.Run("FromRSAtoJWKS", func(t *testing.T) {
+		n := rsaPub.N
+		e := rsaPub.E
+		fmt.Printf("Modulus (n): %s\n", n.String())
+		fmt.Printf("Exponent (e): %d\n", e)
+
+		nBytes := n.Bytes()
+		nBase64 := base64.URLEncoding.EncodeToString(nBytes)
+		nBase64 = strings.TrimRight(nBase64, "=")
+		fmt.Println("Encoded n:", nBase64)
+		fmt.Println("Encoded e:", intToBase64(e))
+	})
+
+	t.Run("SignToken", func(t *testing.T) {
+		rsaPrivateKey, err := parseRSAPrivateKey(privateKeyPEM)
+		if err != nil {
+			t.Fatalf("failed to parse RSA private key: %v", err)
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+			"sub":   "987654321",
+			"name":  "Joe Dohn",
+			"admin": false,
+		})
+
+		tokenString, err := token.SignedString(rsaPrivateKey)
+		if err != nil {
+			t.Fatalf("failed to sign token: %v", err)
+		}
+		fmt.Println("Signed Token:", tokenString)
+
+		token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return rsaPub, nil
+		})
+		if err != nil {
+			t.Fatalf("error parsing token: %v", err)
+		}
+		fmt.Println("Token is valid:", token.Valid)
+	})
+
+	t.Run("ParseJWTToken", func(t *testing.T) {
+		token, err := jwt.Parse(jwtTokenString, func(token *jwt.Token) (interface{}, error) {
+			return rsaPub, nil
+		})
+		if err != nil {
+			t.Fatalf("error parsing token: %v", err)
+		}
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			fmt.Println("Token Claims:")
+			for key, value := range claims {
+				fmt.Printf("%s: %v\n", key, value)
+			}
+		} else {
+			t.Fatalf("invalid token claims")
+		}
+		fmt.Println("Token is valid:", token.Valid)
+	})
+
+	t.Run("PublicKeyToPEM", func(t *testing.T) {
+		fmt.Println("Public Key PEM:")
+		fmt.Println(publicKeyToPEM(rsaPub))
+	})
 }
