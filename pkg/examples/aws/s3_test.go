@@ -20,13 +20,13 @@ var (
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	localstack, err := New()
+	localStack, err := New()
 	if err != nil {
 		t.Fatalf("failed to start LocalStack: %s", err)
 	}
-	defer localstack.Terminate()
+	defer localStack.Terminate()
 	staticCredentials := sdk.NewCredentialsCache(credentials.NewStaticCredentialsProvider("test", "test", ""))
-	s3Client := s3.NewFromConfig(localstack.Config, func(o *s3.Options) {
+	s3Client := s3.NewFromConfig(localStack.Config, func(o *s3.Options) {
 		o.UsePathStyle = true
 		o.Credentials = staticCredentials
 	})
