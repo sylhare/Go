@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	sdk "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"log"
@@ -25,10 +23,10 @@ func TestS3(t *testing.T) {
 		t.Fatalf("failed to start LocalStack: %s", err)
 	}
 	defer localStack.Terminate()
-	staticCredentials := sdk.NewCredentialsCache(credentials.NewStaticCredentialsProvider("test", "test", ""))
+	//staticCredentials := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider("test", "test", ""))
 	s3Client := s3.NewFromConfig(localStack.Config, func(o *s3.Options) {
 		o.UsePathStyle = true
-		o.Credentials = staticCredentials
+		//o.Credentials = staticCredentials
 	})
 
 	t.Run("Create bucket", func(t *testing.T) {

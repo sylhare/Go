@@ -41,7 +41,19 @@ func New() (*Localstack, error) {
 		return nil, err
 	}
 
-	awsConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
+	awsConfig, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(
+			sdk.CredentialsProviderFunc(func(ctx context.Context) (sdk.Credentials, error) {
+				return sdk.Credentials{
+					AccessKeyID:     "test",
+					SecretAccessKey: "test",
+					SessionToken:    "",
+					Source:          "Test Credentials",
+				}, nil
+			}),
+		),
+	)
 	if err != nil {
 		return nil, err
 	}
