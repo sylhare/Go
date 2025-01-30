@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
@@ -195,4 +196,37 @@ func TestRSA(t *testing.T) {
 		fmt.Println("Public Key PEM:")
 		fmt.Println(publicKeyToPEM(rsaPub))
 	})
+}
+
+func base64URLEncode(data []byte) string {
+	return base64.RawURLEncoding.EncodeToString(data)
+}
+
+func TestFakeJwt(t *testing.T) {
+	// Create the JWT header with alg set to none
+	header := map[string]interface{}{
+		"alg": "none",
+		"typ": "JWT",
+		"kid": "test-key-id",
+	}
+	headerBytes, err := json.Marshal(header)
+	if err != nil {
+		fmt.Println("Error marshaling header:", err)
+		return
+	}
+	headerBase64 := base64URLEncode(headerBytes)
+
+	payload := map[string]interface{}{
+		"sub": "user_123456789",
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println("Error marshaling payload:", err)
+		return
+	}
+	payloadBase64 := base64URLEncode(payloadBytes)
+
+	token := fmt.Sprintf("%s.%s.", headerBase64, payloadBase64)
+
+	fmt.Println("JWT Token with alg=none:", token)
 }
