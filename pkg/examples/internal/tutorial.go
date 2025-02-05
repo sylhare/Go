@@ -47,7 +47,7 @@ func doSomething() error {
 
 func Modify(a *int) int {
 	*a += 1
-	return *a
+	return *a // dereference the pointer to get the value
 }
 
 func ModifyForReal(a int) int {
