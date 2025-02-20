@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -41,4 +42,24 @@ func TestPrintValueWithStruct(t *testing.T) {
 
 	result = StringifyValue(r, "hello")
 	assert.Equal(t, "test: Value: hello", result)
+}
+
+func TestPtr(t *testing.T) {
+	testCases := []struct {
+		name  string
+		value any
+	}{
+		{"int", 42},
+		{"string", "hello"},
+		{"struct", RegularStruct{name: "test"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ptrValue := ptr(tc.value)
+			assert.Equal(t, &tc.value, ptrValue)
+			assert.Equal(t, tc.value, *ptrValue)
+			assert.Equal(t, reflect.Ptr, reflect.TypeOf(ptrValue).Kind())
+		})
+	}
 }

@@ -31,3 +31,7 @@ type RegularStruct struct {
 func StringifyValue[T any](r RegularStruct, value T) string {
 	return fmt.Sprintf("%s: Value: %v", r.name, value)
 }
+
+func ptr[T any](v T) *T {
+	return &v
+}
