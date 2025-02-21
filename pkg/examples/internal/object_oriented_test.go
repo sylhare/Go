@@ -34,7 +34,8 @@ func TestObjectOriented(t *testing.T) {
 		human := Human{1, "John"}
 		doctor := Doctor{"doctor's diploma", human}
 
-		assert.True(t, human.Equal(doctor))
+		assert.False(t, human.Equal(doctor))
+		assert.True(t, human.Equal(doctor.Human))
 		assert.True(t, doctor.Equal(human))
 	})
 
