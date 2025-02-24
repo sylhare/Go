@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -102,5 +103,34 @@ func TestObjectOriented(t *testing.T) {
 				assert.Equal(t, nil, nilHealer)
 			})
 		})
+	})
+}
+
+func TestEvent(t *testing.T) {
+	testCases := []struct {
+		name         string
+		event        Event
+		expectedType EventType
+	}{
+		{"EventCreated", Event{ID: "1", Type: EventCreated}, EventCreated},
+		{"EventDeleted", Event{ID: "2", Type: EventDeleted}, EventDeleted},
+		{"EventUpdated", Event{ID: "3", Type: EventUpdated}, EventUpdated},
+		{"EventType is not a hard type", Event{ID: "3", Type: "random"}, "random"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedType, tc.event.Type)
+		})
+	}
+
+	t.Run("deserialization gives the string not matching the type", func(t *testing.T) {
+		invalidJSON := `{"id": "1", "type": "read"}`
+
+		var event Event
+		err := json.Unmarshal([]byte(invalidJSON), &event)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "read", string(event.Type))
 	})
 }

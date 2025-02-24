@@ -54,6 +54,7 @@ type Equaler interface {
 	Equal(Equaler) bool
 }
 
+// When facing interface{} type in Go, you can convert it using .(Type) for type assertion.
 func (h Human) Equal(e Equaler) bool {
 	otherPerson, ok := e.(Human)
 	if !ok {
@@ -62,4 +63,16 @@ func (h Human) Equal(e Equaler) bool {
 	return h.name == otherPerson.name
 }
 
-// When facing interface{} type in Go, you can convert it using .(Type) for type assertion.
+type EventType string
+
+// Looks like an enum but does not have any type safety.
+const (
+	EventCreated EventType = "created"
+	EventDeleted EventType = "deleted"
+	EventUpdated EventType = "updated"
+)
+
+type Event struct {
+	ID   string    `json:"id"`
+	Type EventType `json:"type"`
+}
