@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	"tutorial.sqlc.dev/app/db/migrations"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -61,9 +62,17 @@ func TestRun(t *testing.T) {
 		}
 	}()
 
-	if err := run(dsn); err != nil {
-		t.Fatalf("run() failed: %s", err)
-	}
+	t.Run("Tutorial tests", func(t *testing.T) {
+		if err := run(dsn); err != nil {
+			t.Fatalf("Tutorial tests failed: %s", err)
+		}
+	})
+
+	t.Run("Migrations tests", func(t *testing.T) {
+		if err := migrations.Run(dsn); err != nil {
+			t.Fatalf("Migrations tests failed: %s", err)
+		}
+	})
 }
 
 // Need the postgres in docker running
