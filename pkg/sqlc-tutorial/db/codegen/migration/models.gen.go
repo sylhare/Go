@@ -14,3 +14,10 @@ type Author struct {
 	Bio  pgtype.Text
 	Uuid pgtype.UUID
 }
+
+type Book struct {
+	ID        int64
+	Title     string
+	AuthorID  int64
+	CreatedAt pgtype.Timestamptz
+}

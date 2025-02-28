@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addBook = `-- name: AddBook :one
+INSERT INTO books (title, author_id)
+VALUES ($1, $2) RETURNING id, title, author_id, created_at
+`
+
+type AddBookParams struct {
+	Title    string
+	AuthorID int64
+}
+
+func (q *Queries) AddBook(ctx context.Context, arg AddBookParams) (Book, error) {
+	row := q.db.QueryRow(ctx, addBook, arg.Title, arg.AuthorID)
+	var i Book
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.AuthorID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createAuthor = `-- name: CreateAuthor :one
 INSERT INTO authors (name, bio)
 VALUES ($1, $2) RETURNING id, name, bio
