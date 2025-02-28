@@ -49,5 +49,6 @@ func run(dsn string) error {
 
 	// prints true
 	log.Println(reflect.DeepEqual(insertedAuthor, fetchedAuthor))
-	return nil
+
+	return transaction(ctx, conn, queries)
 }
