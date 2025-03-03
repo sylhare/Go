@@ -146,3 +146,28 @@ func goroutines() {
 		fmt.Println(v2)
 	}
 }
+
+func exploreContext() error {
+	const valueKey = "valueKey"
+	const functionKey = "functionKey"
+	myFunc := func() {
+		fmt.Println("Function called from context")
+	}
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, valueKey, "myValue")
+	ctx = context.WithValue(ctx, functionKey, myFunc)
+
+	value := ctx.Value(valueKey)
+	if value == nil {
+		return fmt.Errorf("value not found in context")
+	}
+	fmt.Println("Value found in context:", value)
+	function := ctx.Value(functionKey)
+	if function == nil {
+		return fmt.Errorf("function not found in context")
+	}
+	function.(func())()
+
+	return nil
+}

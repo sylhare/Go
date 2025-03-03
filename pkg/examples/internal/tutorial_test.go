@@ -13,6 +13,11 @@ func TestRunGoroutines(t *testing.T) {
 	goroutines()
 }
 
+func TestExploreContext(t *testing.T) {
+	err := exploreContext()
+	assert.NoError(t, err)
+}
+
 func TestModify(t *testing.T) {
 	var a, b int
 
