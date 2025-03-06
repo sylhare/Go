@@ -1,4 +1,4 @@
-package internal
+package object_oriented
 
 import (
 	"encoding/json"
@@ -13,20 +13,22 @@ func TestObjectOriented(t *testing.T) {
 		human := Human{1, "John"}
 		doctor := Doctor{"doctor's diploma", human}
 
-		assert.Equal(t, "John", doctor.GetName())
+		assert.Equal(t, "John", doctor.Name())
+		assert.Equal(t, "Dr. John", doctor.Title())
+		assert.Equal(t, "John", human.Title())
 	})
 
 	t.Run("Interface", func(t *testing.T) {
 
 		t.Run("Doctor heals patient", func(t *testing.T) {
 			doctor := Doctor{Human: Human{name: "Dr. John"}}
-			HealPatient(doctor)
+			Healing(doctor)
 			assert.True(t, doctor.Heal())
 		})
 
-		t.Run("Magician heals patient", func(t *testing.T) {
-			magician := Magician{Human: Human{name: "Merlin"}}
-			HealPatient(magician)
+		t.Run("Sorcerer heals patient", func(t *testing.T) {
+			magician := Sorcerer{Human: Human{name: "Merlin"}}
+			Healing(magician)
 			assert.True(t, magician.Heal())
 		})
 	})

@@ -1,4 +1,4 @@
-package internal
+package object_oriented
 
 import "fmt"
 
@@ -7,7 +7,11 @@ type Human struct {
 	name string // private outside the package because it starts with a lowercase letter
 }
 
-func (h Human) GetName() string {
+func (h Human) Name() string {
+	return h.name
+}
+
+func (h Human) Title() string {
 	return h.name
 }
 
@@ -19,36 +23,52 @@ type Healer interface {
 var _ Healer = Doctor{}       // Verify that T implements I.
 var _ Healer = (*Doctor)(nil) // Verify that *T implements I.
 
+type DoctorInterface interface {
+	Healer
+	Name() string
+}
+
+var _ DoctorInterface = Doctor{}
+
 type Doctor struct {
 	License string
 	Human
+}
+
+func (d Doctor) Title() string {
+	return "Dr. " + d.name
 }
 
 func (d Doctor) Heal() bool {
 	return true
 }
 
-type Magician struct {
+type Sorcerer struct {
 	Human
 }
 
-func (m Magician) Heal() bool {
+func (m Sorcerer) Heal() bool {
 	return true
 }
 
-func HealPatient(h Healer) {
+func Healing(h Healer) {
 	if h.Heal() {
-		fmt.Println("Patient healed successfully.")
+		fmt.Println("Healed. 💪")
 	} else {
-		fmt.Println("Failed to heal the patient.")
+		fmt.Println("Failed. 😵")
 	}
 }
 
+type HealthProfile struct {
+	Age    int
+	Weight int
+}
+
 // Guarantee that Human and Doctor implements Equaler.
-var _ Equaler = Human{}        // Verify that T implements I.
-var _ Equaler = Doctor{}       // Verify that T implements I.
-var _ Equaler = (*Human)(nil)  // Verify that *T implements I.
-var _ Equaler = (*Doctor)(nil) // Verify that *T implements I.
+var _ Equaler = Human{} // Verify that (receiver T) implements I.
+var _ Equaler = Doctor{}
+var _ Equaler = (*Human)(nil) // Verify that (receiver *T) implements I.
+var _ Equaler = (*Doctor)(nil)
 
 type Equaler interface {
 	Equal(Equaler) bool
