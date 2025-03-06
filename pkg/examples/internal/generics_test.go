@@ -63,3 +63,32 @@ func TestPtr(t *testing.T) {
 		})
 	}
 }
+
+func TestStructs(t *testing.T) {
+
+	t.Run("generic interface", func(t *testing.T) {
+		a := &StructA{values: []string{"one", "two", "three"}}
+		a.One()
+		a.Two()
+		assert.Equal(t, a, a.Values().Values())
+
+		b := &StructB{values: []int{1, 2, 3}}
+		b.One()
+		assert.Equal(t, b, b.Values().Values())
+	})
+
+	t.Run("Generic conversion", func(t *testing.T) {
+		var ca C[A]
+		ca = &StructA{values: []string{"one", "two", "three"}}
+		assert.Equal(t, ca, ca.Values().Values())
+		var a A
+		a = ca.Values()
+		assert.Equal(t, ca, a)
+		ca = a.(C[A]).Values()
+
+		a2 := &StructA{values: []string{"one", "two", "three"}}
+		var ca2 C[A]
+		ca2 = a2 // a2.(C[A]) does not work because `a2` is of type struct and not the A interface
+		assert.Equal(t, a.(C[A]), ca2)
+	})
+}

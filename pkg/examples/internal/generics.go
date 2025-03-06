@@ -35,3 +35,32 @@ func StringifyValue[T any](r RegularStruct, value T) string {
 func ptr[T any](v T) *T {
 	return &v
 }
+
+type Empty interface{}
+
+type A interface {
+	One()
+	Two()
+	Values() A
+}
+
+type StructA struct{ values []string }
+
+func (s *StructA) One()      {}
+func (s *StructA) Two()      {}
+func (s *StructA) Values() A { return s }
+
+type B interface {
+	One()
+	Values() B
+}
+
+type StructB struct{ values []int }
+
+func (s *StructB) One()      {}
+func (s *StructB) Values() B { return s }
+
+type C[T any] interface {
+	One()
+	Values() T
+}
