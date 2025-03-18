@@ -23,3 +23,6 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    - name: Test with Coverage
+      run: go test -covermode=count -coverpkg=./... -coverprofile=./coverage.out ./...
