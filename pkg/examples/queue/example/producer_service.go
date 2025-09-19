@@ -1,4 +1,3 @@
-// Package example provides working examples of the queue system
 package example
 
 import (

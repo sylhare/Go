@@ -1,4 +1,3 @@
-// Package broker provides Producer and Consumer implementations
 package broker
 
 import (

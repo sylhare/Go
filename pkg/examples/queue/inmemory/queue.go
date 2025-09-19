@@ -1,4 +1,3 @@
-// Package inmemory provides an in-memory implementation of the queue interface
 package inmemory
 
 import (

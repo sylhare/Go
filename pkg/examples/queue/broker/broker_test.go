@@ -2,7 +2,6 @@ package broker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -13,114 +12,88 @@ import (
 	"github.com/syl/Go/pkg/examples/queue"
 )
 
-// fakeQueue is a simple test-only queue implementation for broker testing
-// This allows broker tests to be completely independent of any specific queue implementation
-type fakeQueue struct {
-	topics map[string]chan *queue.Message
-	closed bool
-	mutex  sync.RWMutex
+const (
+	// ConsumerStartupDelay allows consumers to start processing
+	ConsumerStartupDelay = 200 * time.Millisecond
+	// DefaultTestTimeout for broker test assertions
+	DefaultTestTimeout = 5 * time.Second
+)
+
+// BrokerTestFixture provides test infrastructure for broker testing
+type BrokerTestFixture struct {
+	Queue    queue.Queue
+	Producer queue.Producer
+	Consumer queue.Consumer
+	Ctx      context.Context
+	T        *testing.T
 }
 
-// newFakeQueue creates a new fake queue for testing
-func newFakeQueue() *fakeQueue {
-	return &fakeQueue{
-		topics: make(map[string]chan *queue.Message),
-		closed: false,
-	}
-}
+// NewBrokerTestFixture creates a fixture for testing broker components
+func NewBrokerTestFixture(t *testing.T, q queue.Queue) *BrokerTestFixture {
+	t.Helper()
 
-func (q *fakeQueue) Enqueue(ctx context.Context, topic string, message *queue.Message) error {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
+	producer := NewQueueProducer(q)
+	consumer := NewQueueConsumer(q)
+	ctx := context.Background()
 
-	if q.closed {
-		return errors.New("queue is closed")
-	}
+	t.Cleanup(func() {
+		consumer.Close()
+		producer.Close()
+		q.Close()
+	})
 
-	if _, exists := q.topics[topic]; !exists {
-		q.topics[topic] = make(chan *queue.Message, 100) // Buffered for testing
-	}
-
-	select {
-	case q.topics[topic] <- message:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (q *fakeQueue) Dequeue(ctx context.Context, topic string) (*queue.Message, error) {
-	q.mutex.RLock()
-	ch, exists := q.topics[topic]
-	closed := q.closed
-	q.mutex.RUnlock()
-
-	if closed {
-		return nil, errors.New("queue is closed")
-	}
-
-	if !exists {
-		return nil, nil // No messages in topic
-	}
-
-	select {
-	case msg := <-ch:
-		return msg, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		return nil, nil // No messages available
+	return &BrokerTestFixture{
+		Queue:    q,
+		Producer: producer,
+		Consumer: consumer,
+		Ctx:      ctx,
+		T:        t,
 	}
 }
 
-func (q *fakeQueue) Size(ctx context.Context, topic string) (int, error) {
-	q.mutex.RLock()
-	defer q.mutex.RUnlock()
+// AssertQueueSize verifies the queue size for a topic
+func (f *BrokerTestFixture) AssertQueueSize(topic string, expectedSize int, msgAndArgs ...interface{}) {
+	f.T.Helper()
 
-	if q.closed {
-		return 0, errors.New("queue is closed")
-	}
-
-	if ch, exists := q.topics[topic]; exists {
-		return len(ch), nil
-	}
-	return 0, nil
+	size, err := f.Queue.Size(f.Ctx, topic)
+	require.NoError(f.T, err, "Should get queue size")
+	assert.Equal(f.T, expectedSize, size, msgAndArgs...)
 }
 
-func (q *fakeQueue) Topics(ctx context.Context) ([]string, error) {
-	q.mutex.RLock()
-	defer q.mutex.RUnlock()
+// PublishMessages publishes multiple test messages to a topic
+func (f *BrokerTestFixture) PublishMessages(topic string, messages []string) {
+	f.T.Helper()
 
-	if q.closed {
-		return nil, errors.New("queue is closed")
+	for _, msg := range messages {
+		err := f.Producer.Publish(f.Ctx, topic, []byte(msg), nil)
+		require.NoError(f.T, err, "Should publish message %s", msg)
 	}
-
-	topics := make([]string, 0, len(q.topics))
-	for topic := range q.topics {
-		topics = append(topics, topic)
-	}
-	return topics, nil
 }
 
-func (q *fakeQueue) Close() error {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
+// AssertMessagesReceived waits for and validates received messages
+func (f *BrokerTestFixture) AssertMessagesReceived(msgChan <-chan *queue.Message, expectedCount int, timeout time.Duration) {
+	f.T.Helper()
 
-	if q.closed {
-		return nil
+	receivedCount := 0
+	timeoutChan := time.After(timeout)
+
+	for receivedCount < expectedCount {
+		select {
+		case msg := <-msgChan:
+			f.T.Logf("Received message: %s", string(msg.Payload))
+			receivedCount++
+		case <-timeoutChan:
+			f.T.Fatalf("Timeout waiting for messages, received %d of %d", receivedCount, expectedCount)
+		}
 	}
 
-	q.closed = true
-	for _, ch := range q.topics {
-		close(ch)
-	}
-	return nil
+	assert.Equal(f.T, expectedCount, receivedCount, "Should receive expected number of messages")
 }
 
 func TestBroker(t *testing.T) {
 	t.Run("Producer", func(t *testing.T) {
 		t.Run("PublishMessage", func(t *testing.T) {
-			q := newFakeQueue()
+			q := queue.NewMock()
 			fixture := NewBrokerTestFixture(t, q)
 			topic := "test-topic"
 			payload := []byte("test message")
@@ -143,7 +116,7 @@ func TestBroker(t *testing.T) {
 
 	t.Run("Consumer", func(t *testing.T) {
 		t.Run("Subscribe", func(t *testing.T) {
-			q := newFakeQueue()
+			q := queue.NewMock()
 			fixture := NewBrokerTestFixture(t, q)
 			topic := "test-topic"
 			receivedMessages := make(chan *queue.Message, 10)
@@ -168,7 +141,7 @@ func TestBroker(t *testing.T) {
 		})
 
 		t.Run("MultipleSubscriptions", func(t *testing.T) {
-			q := newFakeQueue()
+			q := queue.NewMock()
 			fixture := NewBrokerTestFixture(t, q)
 			topic1, topic2 := "topic1", "topic2"
 
@@ -220,7 +193,7 @@ func TestBroker(t *testing.T) {
 		})
 
 		t.Run("ConcurrentConsumers", func(t *testing.T) {
-			q := newFakeQueue()
+			q := queue.NewMock()
 			fixture := NewBrokerTestFixture(t, q)
 			topic := "concurrent-topic"
 			numConsumers := 3

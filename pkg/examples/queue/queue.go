@@ -59,4 +59,3 @@ type Consumer interface {
 	Close() error
 }
 
-
