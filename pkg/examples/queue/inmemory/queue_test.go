@@ -1,213 +1,149 @@
 package inmemory
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/syl/Go/pkg/examples/queue"
+	"github.com/syl/Go/pkg/examples/queue/testutils"
 )
 
-func TestInMemoryQueue_EnqueueDequeue(t *testing.T) {
-	q := NewInMemoryQueue()
-	defer q.Close()
+func assertQueueOperationErrors(t *testing.T, fixture *testutils.BaseFixture, topic string, msg *queue.Message) {
+	t.Helper()
+	
+	err := fixture.Queue.Enqueue(fixture.Ctx, topic, msg)
+	assert.Error(t, err, "Should error when enqueueing to closed queue")
 
-	ctx := context.Background()
-	topic := "test-topic"
+	_, err = fixture.Queue.Dequeue(fixture.Ctx, topic)
+	assert.Error(t, err, "Should error when dequeueing from closed queue")
 
-	msg := &queue.Message{
-		ID:        "test-id",
-		Topic:     topic,
-		Payload:   []byte("test payload"),
-		Headers:   map[string]string{"key": "value"},
-		Timestamp: time.Now(),
-	}
+	_, err = fixture.Queue.Size(fixture.Ctx, topic)
+	assert.Error(t, err, "Should error when getting size of closed queue")
 
-	err := q.Enqueue(ctx, topic, msg)
-	if err != nil {
-		t.Fatalf("Failed to enqueue message: %v", err)
-	}
-
-	size, err := q.Size(ctx, topic)
-	if err != nil {
-		t.Fatalf("Failed to get size: %v", err)
-	}
-	if size != 1 {
-		t.Fatalf("Expected size 1, got %d", size)
-	}
-
-	dequeuedMsg, err := q.Dequeue(ctx, topic)
-	if err != nil {
-		t.Fatalf("Failed to dequeue message: %v", err)
-	}
-
-	if dequeuedMsg == nil {
-		t.Fatal("Expected message, got nil")
-	}
-
-	if dequeuedMsg.ID != msg.ID {
-		t.Fatalf("Expected message ID %s, got %s", msg.ID, dequeuedMsg.ID)
-	}
-
-	if string(dequeuedMsg.Payload) != string(msg.Payload) {
-		t.Fatalf("Expected payload %s, got %s", string(msg.Payload), string(dequeuedMsg.Payload))
-	}
+	_, err = fixture.Queue.Topics(fixture.Ctx)
+	assert.Error(t, err, "Should error when getting topics of closed queue")
 }
 
-func TestInMemoryQueue_DequeueEmpty(t *testing.T) {
-	q := NewInMemoryQueue()
-	defer q.Close()
+func TestInMemoryQueue(t *testing.T) {
+	t.Run("EnqueueDequeue", func(t *testing.T) {
+		q := NewInMemoryQueue()
+		fixture := testutils.NewBaseFixture(t, q)
+		topic := "test-topic"
 
-	ctx := context.Background()
-	topic := "empty-topic"
+		msg := fixture.CreateMessage("test-id", topic, []byte("test payload"))
 
-	msg, err := q.Dequeue(ctx, topic)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+		err := fixture.Queue.Enqueue(fixture.Ctx, topic, msg)
+		require.NoError(t, err, "Should enqueue message successfully")
 
-	if msg != nil {
-		t.Fatal("Expected nil message from empty queue")
-	}
-}
+		fixture.AssertQueueSize(topic, 1, "Queue should contain exactly one message")
 
-func TestInMemoryQueue_Topics(t *testing.T) {
-	q := NewInMemoryQueue()
-	defer q.Close()
+		dequeuedMsg, err := fixture.Queue.Dequeue(fixture.Ctx, topic)
+		require.NoError(t, err, "Should dequeue message")
+		require.NotNil(t, dequeuedMsg, "Message should not be nil")
 
-	ctx := context.Background()
+		assert.Equal(t, msg.ID, dequeuedMsg.ID, "Message ID should match")
+		assert.Equal(t, msg.Payload, dequeuedMsg.Payload, "Payload should match")
+		assert.Equal(t, msg.Headers, dequeuedMsg.Headers, "Headers should match")
+	})
 
-	topics, err := q.Topics(ctx)
-	if err != nil {
-		t.Fatalf("Failed to get topics: %v", err)
-	}
-	if len(topics) != 0 {
-		t.Fatalf("Expected 0 topics, got %d", len(topics))
-	}
+	t.Run("DequeueEmpty", func(t *testing.T) {
+		q := NewInMemoryQueue()
+		fixture := testutils.NewBaseFixture(t, q)
+		topic := "empty-topic"
 
-	msg1 := &queue.Message{ID: "1", Topic: "topic1", Payload: []byte("payload1"), Timestamp: time.Now()}
-	msg2 := &queue.Message{ID: "2", Topic: "topic2", Payload: []byte("payload2"), Timestamp: time.Now()}
+		msg, err := fixture.Queue.Dequeue(fixture.Ctx, topic)
+		require.NoError(t, err, "Should not error when dequeuing from empty queue")
+		assert.Nil(t, msg, "Should return nil message for empty queue")
+	})
 
-	err = q.Enqueue(ctx, "topic1", msg1)
-	if err != nil {
-		t.Fatalf("Failed to enqueue to topic1: %v", err)
-	}
+	t.Run("Topics", func(t *testing.T) {
+		q := NewInMemoryQueue()
+		fixture := testutils.NewBaseFixture(t, q)
 
-	err = q.Enqueue(ctx, "topic2", msg2)
-	if err != nil {
-		t.Fatalf("Failed to enqueue to topic2: %v", err)
-	}
+		t.Run("InitiallyEmpty", func(t *testing.T) {
+			topics, err := fixture.Queue.Topics(fixture.Ctx)
+			require.NoError(t, err, "Should get topics successfully")
+			assert.Empty(t, topics, "Should have no topics initially")
+		})
 
-	topics, err = q.Topics(ctx)
-	if err != nil {
-		t.Fatalf("Failed to get topics: %v", err)
-	}
+		t.Run("AfterEnqueue", func(t *testing.T) {
+			msg1 := fixture.CreateMessage("1", "topic1", []byte("payload1"))
+			msg2 := fixture.CreateMessage("2", "topic2", []byte("payload2"))
 
-	if len(topics) != 2 {
-		t.Fatalf("Expected 2 topics, got %d", len(topics))
-	}
+			err := fixture.Queue.Enqueue(fixture.Ctx, "topic1", msg1)
+			require.NoError(t, err, "Should enqueue to topic1")
 
-	topicMap := make(map[string]bool)
-	for _, topic := range topics {
-		topicMap[topic] = true
-	}
+			err = fixture.Queue.Enqueue(fixture.Ctx, "topic2", msg2)
+			require.NoError(t, err, "Should enqueue to topic2")
 
-	if !topicMap["topic1"] || !topicMap["topic2"] {
-		t.Fatal("Expected both topic1 and topic2 to be present")
-	}
-}
+			topics, err := fixture.Queue.Topics(fixture.Ctx)
+			require.NoError(t, err, "Should get topics successfully")
+			assert.Len(t, topics, 2, "Should have exactly 2 topics")
 
-func TestInMemoryQueue_Close(t *testing.T) {
-	q := NewInMemoryQueue()
+			fixture.AssertTopicsContain("topic1", "topic2")
+		})
+	})
 
-	ctx := context.Background()
-	topic := "test-topic"
+	t.Run("Close", func(t *testing.T) {
+		q := NewInMemoryQueue()
+		fixture := testutils.NewBaseFixture(t, q)
+		topic := "test-topic"
 
-	msg := &queue.Message{ID: "test", Topic: topic, Payload: []byte("test"), Timestamp: time.Now()}
-	err := q.Enqueue(ctx, topic, msg)
-	if err != nil {
-		t.Fatalf("Failed to enqueue message: %v", err)
-	}
+		msg := fixture.CreateMessage("test", topic, []byte("test"))
+		err := fixture.Queue.Enqueue(fixture.Ctx, topic, msg)
+		require.NoError(t, err, "Should enqueue message before closing")
 
-	err = q.Close()
-	if err != nil {
-		t.Fatalf("Failed to close queue: %v", err)
-	}
+		err = fixture.Queue.Close()
+		require.NoError(t, err, "Should close queue successfully")
 
-	err = q.Enqueue(ctx, topic, msg)
-	if err == nil {
-		t.Fatal("Expected error when enqueueing to closed queue")
-	}
+		t.Run("OperationsAfterClose", func(t *testing.T) {
+			assertQueueOperationErrors(t, fixture, topic, msg)
+		})
+	})
 
-	_, err = q.Dequeue(ctx, topic)
-	if err == nil {
-		t.Fatal("Expected error when dequeueing from closed queue")
-	}
+	t.Run("Concurrent", func(t *testing.T) {
+		q := NewInMemoryQueue()
+		fixture := testutils.NewBaseFixture(t, q)
+		topic := "concurrent-topic"
+		numProducers := 5
+		numMessages := 10
 
-	_, err = q.Size(ctx, topic)
-	if err == nil {
-		t.Fatal("Expected error when getting size of closed queue")
-	}
-
-	_, err = q.Topics(ctx)
-	if err == nil {
-		t.Fatal("Expected error when getting topics of closed queue")
-	}
-}
-
-func TestInMemoryQueue_Concurrent(t *testing.T) {
-	q := NewInMemoryQueue()
-	defer q.Close()
-
-	ctx := context.Background()
-	topic := "concurrent-topic"
-	numProducers := 5
-	numMessages := 10
-
-	done := make(chan struct{})
-	for i := 0; i < numProducers; i++ {
-		go func(producerID int) {
-			for j := 0; j < numMessages; j++ {
-				msg := &queue.Message{
-					ID:        fmt.Sprintf("producer-%d-msg-%d", producerID, j),
-					Topic:     topic,
-					Payload:   []byte(fmt.Sprintf("payload from producer %d, message %d", producerID, j)),
-					Timestamp: time.Now(),
+		done := make(chan struct{})
+		for i := 0; i < numProducers; i++ {
+			go func(producerID int) {
+				for j := 0; j < numMessages; j++ {
+					msg := &queue.Message{
+						ID:        fmt.Sprintf("producer-%d-msg-%d", producerID, j),
+						Topic:     topic,
+						Payload:   []byte(fmt.Sprintf("payload from producer %d, message %d", producerID, j)),
+						Timestamp: time.Now(),
+					}
+					fixture.Queue.Enqueue(fixture.Ctx, topic, msg)
 				}
-				q.Enqueue(ctx, topic, msg)
+				done <- struct{}{}
+			}(i)
+		}
+
+		for i := 0; i < numProducers; i++ {
+			<-done
+		}
+
+		expectedSize := numProducers * numMessages
+		fixture.AssertQueueSize(topic, expectedSize, "Should have correct number of messages")
+
+		messagesReceived := 0
+		for {
+			msg, err := fixture.Queue.Dequeue(fixture.Ctx, topic)
+			require.NoError(t, err, "Should dequeue messages without error")
+			if msg == nil {
+				break
 			}
-			done <- struct{}{}
-		}(i)
-	}
-
-	for i := 0; i < numProducers; i++ {
-		<-done
-	}
-
-	size, err := q.Size(ctx, topic)
-	if err != nil {
-		t.Fatalf("Failed to get size: %v", err)
-	}
-
-	expectedSize := numProducers * numMessages
-	if size != expectedSize {
-		t.Fatalf("Expected size %d, got %d", expectedSize, size)
-	}
-
-	messagesReceived := 0
-	for {
-		msg, err := q.Dequeue(ctx, topic)
-		if err != nil {
-			t.Fatalf("Failed to dequeue message: %v", err)
+			messagesReceived++
 		}
-		if msg == nil {
-			break
-		}
-		messagesReceived++
-	}
 
-	if messagesReceived != expectedSize {
-		t.Fatalf("Expected to receive %d messages, got %d", expectedSize, messagesReceived)
-	}
+		assert.Equal(t, expectedSize, messagesReceived, "Should receive all messages")
+	})
 }
