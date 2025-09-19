@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -10,17 +11,117 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/syl/Go/pkg/examples/queue"
-	"github.com/syl/Go/pkg/examples/queue/inmemory"
-	"github.com/syl/Go/pkg/examples/queue/testutils"
 )
+
+// fakeQueue is a simple test-only queue implementation for broker testing
+// This allows broker tests to be completely independent of any specific queue implementation
+type fakeQueue struct {
+	topics map[string]chan *queue.Message
+	closed bool
+	mutex  sync.RWMutex
+}
+
+// newFakeQueue creates a new fake queue for testing
+func newFakeQueue() *fakeQueue {
+	return &fakeQueue{
+		topics: make(map[string]chan *queue.Message),
+		closed: false,
+	}
+}
+
+func (q *fakeQueue) Enqueue(ctx context.Context, topic string, message *queue.Message) error {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	if q.closed {
+		return errors.New("queue is closed")
+	}
+
+	if _, exists := q.topics[topic]; !exists {
+		q.topics[topic] = make(chan *queue.Message, 100) // Buffered for testing
+	}
+
+	select {
+	case q.topics[topic] <- message:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (q *fakeQueue) Dequeue(ctx context.Context, topic string) (*queue.Message, error) {
+	q.mutex.RLock()
+	ch, exists := q.topics[topic]
+	closed := q.closed
+	q.mutex.RUnlock()
+
+	if closed {
+		return nil, errors.New("queue is closed")
+	}
+
+	if !exists {
+		return nil, nil // No messages in topic
+	}
+
+	select {
+	case msg := <-ch:
+		return msg, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		return nil, nil // No messages available
+	}
+}
+
+func (q *fakeQueue) Size(ctx context.Context, topic string) (int, error) {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+
+	if q.closed {
+		return 0, errors.New("queue is closed")
+	}
+
+	if ch, exists := q.topics[topic]; exists {
+		return len(ch), nil
+	}
+	return 0, nil
+}
+
+func (q *fakeQueue) Topics(ctx context.Context) ([]string, error) {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+
+	if q.closed {
+		return nil, errors.New("queue is closed")
+	}
+
+	topics := make([]string, 0, len(q.topics))
+	for topic := range q.topics {
+		topics = append(topics, topic)
+	}
+	return topics, nil
+}
+
+func (q *fakeQueue) Close() error {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	if q.closed {
+		return nil
+	}
+
+	q.closed = true
+	for _, ch := range q.topics {
+		close(ch)
+	}
+	return nil
+}
 
 func TestBroker(t *testing.T) {
 	t.Run("Producer", func(t *testing.T) {
 		t.Run("PublishMessage", func(t *testing.T) {
-			q := inmemory.NewInMemoryQueue()
-			producer := NewQueueProducer(q)
-			consumer := NewQueueConsumer(q)
-			fixture := testutils.NewBrokerFixture(t, q, producer, consumer)
+			q := newFakeQueue()
+			fixture := NewBrokerTestFixture(t, q)
 			topic := "test-topic"
 			payload := []byte("test message")
 			headers := map[string]string{"key": "value"}
@@ -42,10 +143,8 @@ func TestBroker(t *testing.T) {
 
 	t.Run("Consumer", func(t *testing.T) {
 		t.Run("Subscribe", func(t *testing.T) {
-			q := inmemory.NewInMemoryQueue()
-			producer := NewQueueProducer(q)
-			consumer := NewQueueConsumer(q)
-			fixture := testutils.NewBrokerFixture(t, q, producer, consumer)
+			q := newFakeQueue()
+			fixture := NewBrokerTestFixture(t, q)
 			topic := "test-topic"
 			receivedMessages := make(chan *queue.Message, 10)
 
@@ -57,22 +156,20 @@ func TestBroker(t *testing.T) {
 			err := fixture.Consumer.Subscribe(fixture.Ctx, topic, handler)
 			require.NoError(t, err, "Should subscribe successfully")
 
-			time.Sleep(testutils.ConsumerStartupDelay)
+			time.Sleep(ConsumerStartupDelay)
 
 			testMessages := []string{"message1", "message2", "message3"}
 			fixture.PublishMessages(topic, testMessages)
 
-			fixture.AssertMessagesReceived(receivedMessages, len(testMessages), testutils.DefaultTestTimeout)
+			fixture.AssertMessagesReceived(receivedMessages, len(testMessages), DefaultTestTimeout)
 
 			err = fixture.Consumer.Unsubscribe(fixture.Ctx, topic)
 			require.NoError(t, err, "Should unsubscribe successfully")
 		})
 
 		t.Run("MultipleSubscriptions", func(t *testing.T) {
-			q := inmemory.NewInMemoryQueue()
-			producer := NewQueueProducer(q)
-			consumer := NewQueueConsumer(q)
-			fixture := testutils.NewBrokerFixture(t, q, producer, consumer)
+			q := newFakeQueue()
+			fixture := NewBrokerTestFixture(t, q)
 			topic1, topic2 := "topic1", "topic2"
 
 			topic1Messages := make(chan *queue.Message, 10)
@@ -94,7 +191,7 @@ func TestBroker(t *testing.T) {
 			err = fixture.Consumer.Subscribe(fixture.Ctx, topic2, handler2)
 			require.NoError(t, err, "Should subscribe to topic2")
 
-			time.Sleep(testutils.ConsumerStartupDelay)
+			time.Sleep(ConsumerStartupDelay)
 
 			err = fixture.Producer.Publish(fixture.Ctx, topic1, []byte("message for topic1"), nil)
 			require.NoError(t, err, "Should publish to topic1")
@@ -102,7 +199,7 @@ func TestBroker(t *testing.T) {
 			err = fixture.Producer.Publish(fixture.Ctx, topic2, []byte("message for topic2"), nil)
 			require.NoError(t, err, "Should publish to topic2")
 
-			timeout := time.After(testutils.DefaultTestTimeout)
+			timeout := time.After(DefaultTestTimeout)
 			receivedTopic1, receivedTopic2 := false, false
 
 			for !receivedTopic1 || !receivedTopic2 {
@@ -123,10 +220,8 @@ func TestBroker(t *testing.T) {
 		})
 
 		t.Run("ConcurrentConsumers", func(t *testing.T) {
-			q := inmemory.NewInMemoryQueue()
-			producer := NewQueueProducer(q)
-			consumer := NewQueueConsumer(q)
-			fixture := testutils.NewBrokerFixture(t, q, producer, consumer)
+			q := newFakeQueue()
+			fixture := NewBrokerTestFixture(t, q)
 			topic := "concurrent-topic"
 			numConsumers := 3
 			numMessages := 10
@@ -136,7 +231,7 @@ func TestBroker(t *testing.T) {
 
 			consumers := make([]*QueueConsumer, numConsumers)
 			for i := 0; i < numConsumers; i++ {
-				consumers[i] = NewQueueConsumer(q)
+				consumers[i] = NewQueueConsumer(fixture.Queue)
 				consumerRef := consumers[i]
 				t.Cleanup(func() { consumerRef.Close() })
 				
@@ -149,7 +244,7 @@ func TestBroker(t *testing.T) {
 				require.NoError(t, err, "Should subscribe consumer %d", i)
 			}
 
-			time.Sleep(testutils.ConsumerStartupDelay)
+			time.Sleep(ConsumerStartupDelay)
 
 			wg.Add(1)
 			go func() {

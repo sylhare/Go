@@ -11,7 +11,7 @@ import (
 	"github.com/syl/Go/pkg/examples/queue"
 	"github.com/syl/Go/pkg/examples/queue/broker"
 	"github.com/syl/Go/pkg/examples/queue/inmemory"
-	"github.com/syl/Go/pkg/examples/queue/testutils"
+	"github.com/syl/Go/pkg/examples/queue/inmemory/testutils"
 )
 
 // Test helpers for order-specific functionality

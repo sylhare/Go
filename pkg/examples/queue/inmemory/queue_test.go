@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/syl/Go/pkg/examples/queue"
-	"github.com/syl/Go/pkg/examples/queue/testutils"
+	"github.com/syl/Go/pkg/examples/queue/inmemory/testutils"
 )
 
 func assertQueueOperationErrors(t *testing.T, fixture *testutils.BaseFixture, topic string, msg *queue.Message) {
