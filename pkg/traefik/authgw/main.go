@@ -49,7 +49,7 @@ func main() {
 			email, ok := sessions[c.Value]
 			mu.Unlock()
 			if ok {
-				w.Header().Set("X-Auth-User", email)
+				w.Header().Set("Remote-User", email)
 				w.WriteHeader(http.StatusOK)
 				return
 			}

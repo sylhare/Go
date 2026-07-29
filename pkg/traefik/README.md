@@ -34,7 +34,18 @@ Two Traefik middlewares do the work, both defined in `dynamic.yml`:
 
 The first request has no session, so it is bounced through the OAuth authorization-code flow and comes
 back with a session cookie. Every later request carries that cookie and is let straight through with the
-identity injected as `X-Auth-User`.
+identity injected as `Remote-User`.
+
+`authgw`'s `/auth` endpoint never sees the request body — only the
+[`X-Forwarded-*` headers](https://doc.traefik.io/traefik/middlewares/http/forwardauth/) Traefik copies in
+(`X-Forwarded-Method` / `-Proto` / `-Host` / `-Uri`), which it uses to rebuild the exact URL the user
+asked for and park it in the OAuth `state`. Those `X-Forwarded-*` names are set by
+[Traefik's ForwardAuth middleware](https://doc.traefik.io/traefik/middlewares/http/forwardauth/) and are
+kept as-is — the `X-` prefix is deprecated by [RFC 6648](https://www.rfc-editor.org/rfc/rfc6648), but they
+are a long-standing de-facto standard we do not control. The one header we *do* set, `Remote-User`, drops
+the prefix. On success `/auth` sets `Remote-User` on its response, and Traefik propagates that header to
+the backend because it is listed under the middleware's
+[`authResponseHeaders`](https://doc.traefik.io/traefik/middlewares/http/forwardauth/#authresponseheaders).
 
 ```mermaid
 sequenceDiagram
@@ -60,8 +71,8 @@ sequenceDiagram
     Note over C,B: Later requests — with session cookie
     C->>T: GET app.localhost/ (Cookie gw_session)
     T->>G: forwardAuth /auth
-    G-->>T: 200 + X-Auth-User
-    T->>B: forward with X-Auth-User
+    G-->>T: 200 + Remote-User
+    T->>B: forward with Remote-User
     B-->>C: 200 hello page
 ```
 
@@ -90,7 +101,7 @@ check fails, so it works as a CI gate too.
 go run ./cmd/smoke
 # smoke-testing gateway at http://127.0.0.1:8000
 #   ok   unauth request is redirected
-#   ok   backend sees X-Auth-User
+#   ok   backend sees Remote-User
 #   ok   original 503 preserved
 #   ...
 # passed: 13  failed: 0

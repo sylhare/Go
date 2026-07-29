@@ -28,7 +28,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		who := r.Header.Get("X-Auth-User")
+		who := r.Header.Get("Remote-User")
 		if who == "" {
 			who = "an anonymous visitor"
 		}

@@ -40,7 +40,7 @@ func main() {
 	r = get("app.localhost", "/", jar)
 	checkStatus("authenticated request is allowed", http.StatusOK, r.status)
 	check("success path serves the hello page", "Hello from app-a", r.body)
-	check("backend sees X-Auth-User", "X-Auth-User: alice@example.com", r.body)
+	check("backend sees Remote-User", "Remote-User: alice@example.com", r.body)
 
 	r = get("app.localhost", "/status/503", jar)
 	checkStatus("original 503 preserved", http.StatusServiceUnavailable, r.status)

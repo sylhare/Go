@@ -34,7 +34,7 @@ http:
       forwardAuth:
         address: "http://authgw:8081/auth"
         authResponseHeaders:
-          - "X-Auth-User"
+          - "Remote-User"
 
     custom-errors:
       errors:
