@@ -19,7 +19,7 @@ func main() {
         log.Fatalf("failed to connect to db: %v", err)
     }
     userRepo   := adapters.NewPostgresUserRepository(db)
-    mailer     := adapters.NewSmtpWelcomeMailer("smtp.example.com:587")
+    mailer     := adapters.NewConsoleWelcomeMailer() // Changed to Console mailer for demonstration
 
     // 2. Build use cases (inject adapters through interfaces)
     userService := usecases.NewUserService(userRepo, mailer)

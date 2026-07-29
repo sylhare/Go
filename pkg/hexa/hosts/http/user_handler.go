@@ -15,6 +15,31 @@ func NewUserHandler(uc domain.UserUseCase) *UserHandler {
     return &UserHandler{useCase: uc}
 }
 
+// Request and Response DTOs
+type UserResponse struct {
+    ID    string `json:"id"`
+    Email string `json:"email"`
+    Name  string `json:"name"`
+}
+
+type CreateUserRequest struct {
+    Email string `json:"email"`
+    Name  string `json:"name"`
+}
+
+type UpdateUserRequest struct {
+    Email string `json:"email"`
+    Name  string `json:"name"`
+}
+
+func mapUserToResponse(u domain.User) UserResponse {
+    return UserResponse{
+        ID:    u.ID,
+        Email: u.Email,
+        Name:  u.Name,
+    }
+}
+
 // RegisterRoutes registers the CRUD routes on a ServeMux (Go 1.22+)
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
     mux.HandleFunc("POST /users", h.HandleCreate)
@@ -25,16 +50,13 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *UserHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-    var body struct {
-        Email string `json:"email"`
-        Name  string `json:"name"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+    var req CreateUserRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, "bad request", http.StatusBadRequest)
         return
     }
 
-    user, err := h.useCase.RegisterUser(body.Email, body.Name)
+    user, err := h.useCase.RegisterUser(req.Email, req.Name)
     if err != nil {
         http.Error(w, err.Error(), http.StatusUnprocessableEntity)
         return
@@ -42,7 +64,7 @@ func (h *UserHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(user)
+    json.NewEncoder(w).Encode(mapUserToResponse(user))
 }
 
 func (h *UserHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +80,7 @@ func (h *UserHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(user)
+    json.NewEncoder(w).Encode(mapUserToResponse(user))
 }
 
 func (h *UserHandler) HandleList(w http.ResponseWriter, r *http.Request) {
@@ -68,22 +90,24 @@ func (h *UserHandler) HandleList(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    var res []UserResponse
+    for _, u := range users {
+        res = append(res, mapUserToResponse(u))
+    }
+
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(users)
+    json.NewEncoder(w).Encode(res)
 }
 
 func (h *UserHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
     id := r.PathValue("id")
-    var body struct {
-        Email string `json:"email"`
-        Name  string `json:"name"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+    var req UpdateUserRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, "bad request", http.StatusBadRequest)
         return
     }
 
-    user, err := h.useCase.UpdateUser(id, body.Email, body.Name)
+    user, err := h.useCase.UpdateUser(id, req.Email, req.Name)
     if err != nil {
         if err == domain.ErrUserNotFound {
             http.Error(w, "not found", http.StatusNotFound)
@@ -94,7 +118,7 @@ func (h *UserHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(user)
+    json.NewEncoder(w).Encode(mapUserToResponse(user))
 }
 
 func (h *UserHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {

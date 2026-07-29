@@ -23,6 +23,7 @@ func TestUserService_RegisterUser(t *testing.T) {
     user, err := uc.RegisterUser("alice@example.com", "Alice")
     require.NoError(t, err)
     assert.Equal(t, "alice@example.com", user.Email)
+    assert.NotEmpty(t, user.ID)
 
     _, err = uc.RegisterUser("alice@example.com", "Alice Again")
     require.Error(t, err)
