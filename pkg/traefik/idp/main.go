@@ -1,6 +1,4 @@
-// idp is a throwaway OAuth 2.0 authorization server standing in for an external
-// provider (Google, Okta, Auth0, ...). It implements just enough of the
-// authorization-code flow to be real: /authorize, /token, /userinfo.
+// Command idp is a stand-in OAuth 2.0 provider implementing the authorization-code flow.
 package main
 
 import (
@@ -16,8 +14,8 @@ import (
 
 var (
 	mu     sync.Mutex
-	codes  = map[string]string{} // authorization code -> user email
-	tokens = map[string]string{} // access token       -> user email
+	codes  = map[string]string{}
+	tokens = map[string]string{}
 )
 
 func token() string {
@@ -31,8 +29,6 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// /authorize auto-approves and bounces back to the client's redirect_uri
-	// with a one-time code. A real provider shows a login and consent screen here.
 	mux.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		redirectURI := q.Get("redirect_uri")
@@ -54,7 +50,6 @@ func main() {
 		http.Redirect(w, r, u.String(), http.StatusFound)
 	})
 
-	// /token swaps the code for an access token (server-to-server).
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		mu.Lock()
@@ -77,7 +72,6 @@ func main() {
 		})
 	})
 
-	// /userinfo returns the profile behind a bearer token.
 	mux.HandleFunc("/userinfo", func(w http.ResponseWriter, r *http.Request) {
 		at := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		mu.Lock()

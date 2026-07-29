@@ -32,15 +32,37 @@ Two Traefik middlewares do the work, both defined in `dynamic.yml`:
 
 ## How a request flows
 
-```
-GET app.localhost/  (no session)
-  -> Traefik router "app-a" matches Host(`app.localhost`)
-  -> gateway-auth calls authgw /auth   -> 302 to the OAuth provider (target URL saved in `state`)
-  -> client follows to id.localhost/authorize -> 302 back to auth.localhost/callback?code&state
-  -> authgw /callback exchanges the code, sets a session cookie, 302 back to `state`
-GET app.localhost/  (with session cookie)
-  -> gateway-auth /auth -> 200 + X-Auth-User
-  -> Traefik forwards to echo-a with X-Auth-User set
+The first request has no session, so it is bounced through the OAuth authorization-code flow and comes
+back with a session cookie. Every later request carries that cookie and is let straight through with the
+identity injected as `X-Auth-User`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant T as Traefik
+    participant G as authgw
+    participant I as idp (OAuth)
+    participant B as echo (backend)
+
+    Note over C,B: First request — no session
+    C->>T: GET app.localhost/
+    T->>G: forwardAuth /auth
+    G-->>T: 302 → idp/authorize (target in state)
+    T-->>C: 302
+    C->>I: GET id.localhost/authorize
+    I-->>C: 302 → auth.localhost/callback?code&state
+    C->>G: GET /callback?code&state
+    G->>I: POST /token (code → access_token)
+    G->>I: GET /userinfo (Bearer token)
+    G-->>C: Set-Cookie gw_session; 302 → state
+
+    Note over C,B: Later requests — with session cookie
+    C->>T: GET app.localhost/ (Cookie gw_session)
+    T->>G: forwardAuth /auth
+    G-->>T: 200 + X-Auth-User
+    T->>B: forward with X-Auth-User
+    B-->>C: 200 hello page
 ```
 
 The provider (`idp`) auto-approves as `alice@example.com`, so there is no real login screen to click

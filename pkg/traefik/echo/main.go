@@ -1,8 +1,4 @@
-// echo is a tiny backend serving two paths, one per branch of the demo:
-//   - GET /            a hello-world page that greets the authenticated user,
-//                      with the raw request dumped below so we can see which
-//                      identity headers Traefik injected;
-//   - GET /status/{n}  returns status n, to drive the custom error-page path.
+// Command echo is a backend that greets the authenticated user and echoes the request headers.
 package main
 
 import (

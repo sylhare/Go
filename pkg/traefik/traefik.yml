@@ -1,0 +1,16 @@
+# Install (static) configuration: entrypoints and providers.
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+api:
+  dashboard: true
+  insecure: true # dashboard on :8080, demo only
+
+log:
+  level: INFO

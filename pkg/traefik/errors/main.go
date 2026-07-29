@@ -1,7 +1,4 @@
-// errors serves the custom error pages. Traefik's errors middleware forwards the
-// failed request here with the path from its `query` template (for example
-// /500.html), and returns whatever this service produces to the original client
-// while keeping the original status code.
+// Command errors serves the custom error pages for Traefik's errors middleware.
 package main
 
 import (

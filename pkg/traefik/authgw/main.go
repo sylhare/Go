@@ -1,8 +1,4 @@
-// authgw is the forward-auth gateway. Traefik calls /auth for every protected
-// request; a 2xx means "let it through", anything else is returned to the
-// client verbatim. When there is no session we answer with a 302 to the OAuth
-// provider, carrying the URL the user originally asked for in `state` so we can
-// send them back to the right app once they are authenticated.
+// Command authgw is the forward-auth gateway and OAuth client Traefik calls before every protected request.
 package main
 
 import (
@@ -18,7 +14,7 @@ import (
 
 var (
 	mu       sync.Mutex
-	sessions = map[string]string{} // session id -> user email
+	sessions = map[string]string{}
 )
 
 func sid() string {
@@ -36,8 +32,8 @@ func env(k, def string) string {
 
 func main() {
 	var (
-		authorizeURL = env("AUTHORIZE_URL", "http://id.localhost/authorize") // browser-facing
-		tokenURL     = env("TOKEN_URL", "http://idp:9000/token")             // server-to-server
+		authorizeURL = env("AUTHORIZE_URL", "http://id.localhost/authorize")
+		tokenURL     = env("TOKEN_URL", "http://idp:9000/token")
 		userinfoURL  = env("USERINFO_URL", "http://idp:9000/userinfo")
 		clientID     = env("CLIENT_ID", "gateway")
 		clientSecret = env("CLIENT_SECRET", "s3cret")
@@ -47,21 +43,18 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// /auth is the ForwardAuth address. It never sees the request body, only the
-	// forwarded headers Traefik copies in (X-Forwarded-Method / -Proto / -Host / -Uri).
 	mux.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 		if c, err := r.Cookie("gw_session"); err == nil {
 			mu.Lock()
 			email, ok := sessions[c.Value]
 			mu.Unlock()
 			if ok {
-				w.Header().Set("X-Auth-User", email) // copied downstream via authResponseHeaders
+				w.Header().Set("X-Auth-User", email)
 				w.WriteHeader(http.StatusOK)
 				return
 			}
 		}
 
-		// Rebuild the exact URL the user asked for from the forwarded headers.
 		target := fmt.Sprintf("%s://%s%s",
 			r.Header.Get("X-Forwarded-Proto"),
 			r.Header.Get("X-Forwarded-Host"),
@@ -78,8 +71,6 @@ func main() {
 		http.Redirect(w, r, u.String(), http.StatusFound)
 	})
 
-	// /callback completes the code exchange and drops the user back on the URL
-	// they were trying to reach, whichever app that happens to be.
 	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
 		target := r.URL.Query().Get("state")
@@ -123,7 +114,7 @@ func main() {
 			Name:     "gw_session",
 			Value:    id,
 			Path:     "/",
-			Domain:   cookieDomain, // shared parent domain so the cookie covers every app
+			Domain:   cookieDomain,
 			HttpOnly: true,
 		})
 		if target == "" {
