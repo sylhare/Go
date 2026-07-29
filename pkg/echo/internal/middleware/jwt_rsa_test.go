@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"log"
 	"strings"
 	"testing"
