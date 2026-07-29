@@ -1,0 +1,66 @@
+# Routing (dynamic) configuration served by the file provider.
+# Everything the edge router needs lives here: which host maps to which app,
+# which middlewares run first, and where each service actually is.
+http:
+  routers:
+    # app.localhost is protected: authenticate, then serve echo-a.
+    app-a:
+      rule: "Host(`app.localhost`)"
+      entryPoints: [web]
+      middlewares: [gateway-auth, custom-errors]
+      service: app-a
+
+    # admin.localhost is a different backend behind the same gateway.
+    admin-b:
+      rule: "Host(`admin.localhost`)"
+      entryPoints: [web]
+      middlewares: [gateway-auth, custom-errors]
+      service: admin-b
+
+    # The gateway's own callback endpoint. Public: no auth middleware.
+    authgw:
+      rule: "Host(`auth.localhost`)"
+      entryPoints: [web]
+      service: authgw
+
+    # The OAuth provider. Public.
+    idp:
+      rule: "Host(`id.localhost`)"
+      entryPoints: [web]
+      service: idp
+
+  middlewares:
+    gateway-auth:
+      forwardAuth:
+        address: "http://authgw:8081/auth"
+        authResponseHeaders:
+          - "X-Auth-User"
+
+    custom-errors:
+      errors:
+        status:
+          - "500-599"
+        service: error-pages
+        query: "/{status}.html"
+
+  services:
+    app-a:
+      loadBalancer:
+        servers:
+          - url: "http://echo-a:8080"
+    admin-b:
+      loadBalancer:
+        servers:
+          - url: "http://echo-b:8080"
+    authgw:
+      loadBalancer:
+        servers:
+          - url: "http://authgw:8081"
+    idp:
+      loadBalancer:
+        servers:
+          - url: "http://idp:9000"
+    error-pages:
+      loadBalancer:
+        servers:
+          - url: "http://errors:8082"

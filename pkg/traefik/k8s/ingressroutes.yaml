@@ -1,0 +1,60 @@
+# One IngressRoute per host. Each is the CRD form of a router: entrypoint,
+# match rule, ordered middleware list, and a target Service.
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: app-a
+spec:
+  entryPoints: [web]
+  routes:
+    - match: Host(`app.localhost`)
+      kind: Rule
+      middlewares:
+        - name: gateway-auth
+        - name: custom-errors
+      services:
+        - name: echo-a
+          port: 8080
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: admin-b
+spec:
+  entryPoints: [web]
+  routes:
+    - match: Host(`admin.localhost`)
+      kind: Rule
+      middlewares:
+        - name: gateway-auth
+        - name: custom-errors
+      services:
+        - name: echo-b
+          port: 8080
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: authgw
+spec:
+  entryPoints: [web]
+  routes:
+    - match: Host(`auth.localhost`)
+      kind: Rule
+      services:
+        - name: authgw
+          port: 8081
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: idp
+spec:
+  entryPoints: [web]
+  routes:
+    - match: Host(`id.localhost`)
+      kind: Rule
+      services:
+        - name: idp
+          port: 9000

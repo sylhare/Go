@@ -1,0 +1,24 @@
+# The same two middlewares as dynamic.yml, now as Traefik CRDs.
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: gateway-auth
+spec:
+  forwardAuth:
+    address: "http://authgw.default.svc:8081/auth"
+    authResponseHeaders:
+      - X-Auth-User
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: custom-errors
+spec:
+  errors:
+    status:
+      - "500-599"
+    service:
+      name: errors
+      port: 8082
+    query: "/{status}.html"
