@@ -1,0 +1,36 @@
+services:
+  traefik:
+    image: traefik:v3.4
+    ports:
+      - "8000:80" # host 8000 -> Traefik web entrypoint (use 80:80 if it is free)
+      - "8080:8080" # dashboard
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+
+  echo-a:
+    build:
+      context: .
+      args: { SERVICE: echo }
+    environment: { NAME: app-a }
+
+  echo-b:
+    build:
+      context: .
+      args: { SERVICE: echo }
+    environment: { NAME: admin-b }
+
+  authgw:
+    build:
+      context: .
+      args: { SERVICE: authgw }
+
+  idp:
+    build:
+      context: .
+      args: { SERVICE: idp }
+
+  errors:
+    build:
+      context: .
+      args: { SERVICE: errors }

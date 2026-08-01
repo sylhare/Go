@@ -1,10 +1,7 @@
 package pong
 
 import (
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-
-	"github.com/labstack/echo/v4"
 )
 
 // ensure that we've conformed to the `ServerInterface` with a compile-time check
